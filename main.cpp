@@ -1,5 +1,9 @@
 #include <string>
 #include <iostream>
+#include <memory>
+#include <fstream>
+#include <sstream>
+#include <vector>
 
 using namespace std;
 
@@ -28,6 +32,7 @@ public:
     double calculateTotalCost(int quantity) const {
         return price * quantity;
     }
+    virtual ~Product() {}
 };
 
 class Electronics : public Product {
@@ -49,6 +54,7 @@ public:
     void displayPowerConsumption() const {
         cout << "Power Consumption: " << powerConsumption << " Watts\n";
     }
+    virtual ~Electronics(){}
 };
 
 class Books : public Product {
@@ -69,6 +75,7 @@ public:
     void displayAuthor() const {
         cout << "Author: " << author << "\n";
     }
+    virtual ~Books(){}
 };
 
 class Clothing : public Product {
@@ -89,4 +96,85 @@ public:
     void displaySize() const {
         cout << "Size: " << size << "\n";
     }
+    virtual ~Clothing(){}
 };
+
+class ProductConfiguration {
+public:
+    vector<unique_ptr<Product>> loadProducts(const string& filePath) {
+        ifstream file(filePath);
+        vector<unique_ptr<Product>> products;
+        string line;
+
+        if (!file.is_open()) {
+            cout << "Error opening file." << endl;
+            return products;
+        }
+
+        while (getline(file, line)){
+            if (line.empty() || line[0] == '#') continue; // Skip empty lines and comments
+
+            stringstream ss(line);
+            string type, name, additionalAttr1, additionalAttr2, additionalAttr3;
+            double price;
+            int quantity, id;
+            char delimiter = ',';
+
+            getline(ss, type, delimiter);
+            getline(ss, name, delimiter);
+            ss >> id >> delimiter;
+            ss >> price >> delimiter;
+            ss >> quantity >> delimiter;
+
+            if (type == "Electronics") {
+                getline(ss, additionalAttr1, delimiter);
+                getline(ss, additionalAttr2, delimiter);
+                getline(ss, additionalAttr3); // Last element or rest of the line
+                products.push_back(make_unique<Electronics>(id, name, price, quantity, additionalAttr1, additionalAttr2, stod(additionalAttr3)));
+            } else if (type == "Books") {
+                getline(ss, additionalAttr1, delimiter);
+                getline(ss, additionalAttr2, delimiter);
+                getline(ss, additionalAttr3); // Last element or rest of the line
+                products.push_back(make_unique<Books>(id, name, price, quantity, additionalAttr1, additionalAttr2, additionalAttr3));
+            } else if (type == "Clothing") {
+                getline(ss, additionalAttr1, delimiter);
+                getline(ss, additionalAttr2, delimiter);
+                getline(ss, additionalAttr3); // Last element or rest of the line
+                products.push_back(make_unique<Clothing>(id, name, price, quantity, additionalAttr1, additionalAttr2, additionalAttr3));
+            }
+        }
+        return products;
+    }
+};
+
+
+int main() {
+    ProductConfiguration productConfig;
+    string filePath = "C:\\KSE IT\\oop_2\\text";
+
+    auto products = productConfig.loadProducts(filePath);
+
+    for (const auto& product : products) {
+        if (auto electronics = dynamic_cast<Electronics*>(product.get())) {
+            cout << "Electronics: " << electronics->getName() << ", Price: " << electronics->getPrice()
+                 << ", Quantity: " << electronics->getQuantityInStock()
+                 << ", Brand: " << electronics->getBrand()
+                 << ", Model: " << electronics->getModel()
+                 << ", Power: " << electronics->getPowerConsumption() << "W\n";
+        } else if (auto book = dynamic_cast<Books*>(product.get())) {
+            cout << "Book: " << book->getName() << ", Price: " << book->getPrice()
+                 << ", Quantity: " << book->getQuantityInStock()
+                 << ", Author: " << book->getAuthor()
+                 << ", Genre: " << book->getGenre()
+                 << ", ISBN: " << book->getISBN() << "\n";
+        } else if (auto clothing = dynamic_cast<Clothing*>(product.get())) {
+            cout << "Clothing: " << clothing->getName() << ", Price: " << clothing->getPrice()
+                 << ", Quantity: " << clothing->getQuantityInStock()
+                 << ", Size: " << clothing->getSize()
+                 << ", Color: " << clothing->getColor()
+                 << ", Material: " << clothing->getMaterial() << "\n";
+        }
+    }
+
+    return 0;
+}
