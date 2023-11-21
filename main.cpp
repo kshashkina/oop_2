@@ -101,6 +101,133 @@ public:
     virtual ~Clothing(){}
 };
 
+class Order {
+private:
+    int orderID;
+    string customer;
+    vector<unique_ptr<Product>> products;
+    double totalCost;
+    string orderStatus;
+
+public:
+    Order(int id, const string& customer)
+            : orderID(id), customer(customer), totalCost(0.0), orderStatus("Pending") {}
+
+    void addProduct(unique_ptr<Product> product) {
+        products.push_back(move(product));
+    }
+
+    void calculateTotalCost() {
+        totalCost = 0.0;
+        for (const auto& product : products) {
+            totalCost += product->calculateTotalCost(product->getQuantityInStock());
+        }
+    }
+
+    void changeOrderStatus(const string& newStatus) {
+        orderStatus = newStatus;
+    }
+
+    ~Order() {}
+};
+
+class ProductCatalog {
+private:
+    vector<unique_ptr<Product>> products;
+
+public:
+    ProductCatalog(vector<unique_ptr<Product>>&& existingProducts)
+            : products(move(existingProducts)) {}
+
+    void addProduct(unique_ptr<Product> product) {
+        products.push_back(move(product));
+    }
+
+    void updateProduct(int productID, const string& newName, double newPrice, int newQuantity) {
+        auto it = find_if(products.begin(), products.end(), [productID](const auto& product) {
+            return product->getProductID() == productID;
+        });
+
+        if (it != products.end()) {
+            (*it)->setName(newName);
+            (*it)->setPrice(newPrice);
+            (*it)->setQuantityInStock(newQuantity);
+        } else {
+            cout << "Product with ID " << productID << " not found." << endl;
+        }
+    }
+
+    void removeProduct(int productID) {
+        auto it = remove_if(products.begin(), products.end(), [productID](const auto& product) {
+            return product->getProductID() == productID;
+        });
+
+        if (it != products.end()) {
+            products.erase(it, products.end());
+            cout << "Product with ID " << productID << " removed successfully." << endl;
+        } else {
+            cout << "Product with ID " << productID << " not found." << endl;
+        }
+    }
+
+    void viewAllProducts() const {
+        cout << "Product Catalog:" << endl;
+        for (const auto& product : products) {
+            cout << "ID: " << product->getProductID() << ", Name: " << product->getName()
+                 << ", Price: " << product->getPrice() << ", Quantity: " << product->getQuantityInStock() << endl;
+        }
+    }
+};
+
+class Inventory {
+private:
+    vector<unique_ptr<Product>> products;
+    int lowStockThreshold;
+
+public:
+    Inventory(int threshold, vector<unique_ptr<Product>>&& existingProducts)
+            : lowStockThreshold(threshold), products(move(existingProducts)) {}
+
+    void manageStockLevels(int productID, int quantity) {
+        auto it = find_if(products.begin(), products.end(), [productID](const auto& product) {
+            return product->getProductID() == productID;
+        });
+
+        if (it != products.end()) {
+            (*it)->setQuantityInStock((*it)->getQuantityInStock() + quantity);
+
+            // Notify if the stock is low
+            if ((*it)->getQuantityInStock() < lowStockThreshold) {
+                cout << "Low stock alert for product ID " << productID << endl;
+            }
+        } else {
+            cout << "Product with ID " << productID << " not found." << endl;
+        }
+    }
+
+    void notifyLowStockProducts() const {
+        cout << "Low stock products:" << endl;
+        for (const auto& product : products) {
+            if (product->getQuantityInStock() < lowStockThreshold) {
+                cout << "ID: " << product->getProductID() << ", Name: " << product->getName()
+                     << ", Current Stock: " << product->getQuantityInStock() << endl;
+            }
+        }
+    }
+
+    void restockProducts() {
+        cout << "Products that need restocking:" << endl;
+        for (const auto& product : products) {
+            if (product->getQuantityInStock() < lowStockThreshold) {
+                int quantityToRestock = lowStockThreshold - product->getQuantityInStock();
+                manageStockLevels(product->getProductID(), quantityToRestock);
+                cout << "Restocked product ID " << product->getProductID() << " by " << quantityToRestock << " units." << endl;
+            }
+        }
+    }
+};
+
+
 class ConfigReader {
 public:
     vector<unique_ptr<Product>> loadProducts(string filePath) {
@@ -152,8 +279,10 @@ public:
     }
 
 private:
+    int productIDCounter = 1;
+
     unique_ptr<Electronics> readElectronics(const vector<string>& tokens) {
-        int id = 0;
+        int id = productIDCounter++;
         string name = tokens[1];
         double price = stod(tokens[2]);
         int quantity = stoi(tokens[3]);
@@ -166,7 +295,7 @@ private:
 
     unique_ptr<Books> readBooks(const vector<string>& tokens) {
 
-        int id = 0;
+        int id = productIDCounter++;
         string name = tokens[1];
         double price = stod(tokens[2]);
         int quantity = stoi(tokens[3]);
@@ -178,7 +307,7 @@ private:
     }
 
     unique_ptr<Clothing> readClothing(const vector<string>& tokens) {
-        int id = 0;
+        int id = productIDCounter++;
         string name = tokens[1];
         double price = stod(tokens[2]);
         int quantity = stoi(tokens[3]);
@@ -197,24 +326,9 @@ private:
 int main() {
     ConfigReader configReader;
     vector<unique_ptr<Product>> products = configReader.loadProducts("C:\\KSE IT\\oop_2\\text");
+    ProductCatalog productCatalog(move(products));
 
-    for (const auto& product : products) {
-        // You can access common product properties here
-        cout << "Product ID: " << product->getProductID() << endl;
-        cout << "Name: " << product->getName() << endl;
-        cout << "Price: " << product->getPrice() << endl;
-
-        // Check the type of product and call specific methods
-        if (auto electronicProduct = dynamic_cast<Electronics*>(product.get())) {
-            electronicProduct->displayPowerConsumption();
-        } else if (auto bookProduct = dynamic_cast<Books*>(product.get())) {
-            bookProduct->displayAuthor();
-        } else if (auto clothingProduct = dynamic_cast<Clothing*>(product.get())) {
-            clothingProduct->displaySize();
-        }
-
-        cout << "-------------------------" << endl;
-    }
+    productCatalog.viewAllProducts();
 
     return 0;
 }
