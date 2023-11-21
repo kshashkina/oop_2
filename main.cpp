@@ -4,6 +4,8 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <algorithm>
+#include <map>
 
 using namespace std;
 
@@ -39,17 +41,17 @@ class Electronics : public Product {
 private:
     string brand;
     string model;
-    double powerConsumption;
+    string powerConsumption;
 
 public:
     Electronics(int id, const string& name, double price, int quantity,
-                const string& brand, const string& model, double powerConsumption)
+                const string& brand, const string& model, string powerConsumption)
             : Product(id, name, price, quantity),
               brand(brand), model(model), powerConsumption(powerConsumption) {}
 
     string getBrand() const { return brand; }
     string getModel() const { return model; }
-    double getPowerConsumption() const { return powerConsumption; }
+    string getPowerConsumption() const { return powerConsumption; }
 
     void displayPowerConsumption() const {
         cout << "Power Consumption: " << powerConsumption << " Watts\n";
@@ -99,9 +101,9 @@ public:
     virtual ~Clothing(){}
 };
 
-class ProductConfiguration {
+class ConfigReader {
 public:
-    vector<unique_ptr<Product>> loadProducts(const string& filePath) {
+    vector<unique_ptr<Product>> loadProducts(string filePath) {
         ifstream file(filePath);
         vector<unique_ptr<Product>> products;
         string line;
@@ -111,69 +113,107 @@ public:
             return products;
         }
 
-        while (getline(file, line)){
-            if (line.empty() || line[0] == '#') continue; // Skip empty lines and comments
-
+        while (getline(file, line)) {
             stringstream ss(line);
-            string type, name, additionalAttr1, additionalAttr2, additionalAttr3;
-            double price;
-            int quantity, id;
-            char delimiter = ',';
+            vector<string> tokens;
 
-            getline(ss, type, delimiter);
-            getline(ss, name, delimiter);
-            ss >> id >> delimiter;
-            ss >> price >> delimiter;
-            ss >> quantity >> delimiter;
+            while (ss.good()) {
+                string token;
+                getline(ss, token, ',');
+                tokens.push_back(token);
+            }
 
-            if (type == "Electronics") {
-                getline(ss, additionalAttr1, delimiter);
-                getline(ss, additionalAttr2, delimiter);
-                getline(ss, additionalAttr3); // Last element or rest of the line
-                products.push_back(make_unique<Electronics>(id, name, price, quantity, additionalAttr1, additionalAttr2, stod(additionalAttr3)));
-            } else if (type == "Books") {
-                getline(ss, additionalAttr1, delimiter);
-                getline(ss, additionalAttr2, delimiter);
-                getline(ss, additionalAttr3); // Last element or rest of the line
-                products.push_back(make_unique<Books>(id, name, price, quantity, additionalAttr1, additionalAttr2, additionalAttr3));
-            } else if (type == "Clothing") {
-                getline(ss, additionalAttr1, delimiter);
-                getline(ss, additionalAttr2, delimiter);
-                getline(ss, additionalAttr3); // Last element or rest of the line
-                products.push_back(make_unique<Clothing>(id, name, price, quantity, additionalAttr1, additionalAttr2, additionalAttr3));
+            if (tokens.empty()) {
+                continue; // Skip empty lines
+            }
+
+            string category = tokens[0];
+
+            if (category == "Electronics") {
+                auto electronics = readElectronics(tokens);
+                if (electronics) {
+                    products.push_back(move(electronics));
+                }
+            } else if (category == "Books") {
+                auto books = readBooks(tokens);
+                if (books) {
+                    products.push_back(move(books));
+                }
+            } else if (category == "Clothing") {
+                auto clothing = readClothing(tokens);
+                if (clothing) {
+                    products.push_back(move(clothing));
+                }
             }
         }
+
+        file.close();
         return products;
+    }
+
+private:
+    unique_ptr<Electronics> readElectronics(const vector<string>& tokens) {
+        int id = 0;
+        string name = tokens[1];
+        double price = stod(tokens[2]);
+        int quantity = stoi(tokens[3]);
+        string brand = tokens[4];
+        string model = tokens[5];
+        string powerConsumption = tokens[6];
+
+        return make_unique<Electronics>(id, name, price, quantity, brand, model, powerConsumption);
+    }
+
+    unique_ptr<Books> readBooks(const vector<string>& tokens) {
+
+        int id = 0;
+        string name = tokens[1];
+        double price = stod(tokens[2]);
+        int quantity = stoi(tokens[3]);
+        string author = tokens[4];
+        string genre = tokens[5];
+        string ISBN = tokens[6];
+
+        return make_unique<Books>(id, name, price, quantity, author, genre, ISBN);
+    }
+
+    unique_ptr<Clothing> readClothing(const vector<string>& tokens) {
+        int id = 0;
+        string name = tokens[1];
+        double price = stod(tokens[2]);
+        int quantity = stoi(tokens[3]);
+        string size = tokens[4];
+        string color = tokens[5];
+        string material = tokens[6];
+
+        return make_unique<Clothing>(id, name, price, quantity, size, color, material);
     }
 };
 
 
-int main() {
-    ProductConfiguration productConfig;
-    string filePath = "C:\\KSE IT\\oop_2\\text";
 
-    auto products = productConfig.loadProducts(filePath);
+
+
+int main() {
+    ConfigReader configReader;
+    vector<unique_ptr<Product>> products = configReader.loadProducts("C:\\KSE IT\\oop_2\\text");
 
     for (const auto& product : products) {
-        if (auto electronics = dynamic_cast<Electronics*>(product.get())) {
-            cout << "Electronics: " << electronics->getName() << ", Price: " << electronics->getPrice()
-                 << ", Quantity: " << electronics->getQuantityInStock()
-                 << ", Brand: " << electronics->getBrand()
-                 << ", Model: " << electronics->getModel()
-                 << ", Power: " << electronics->getPowerConsumption() << "W\n";
-        } else if (auto book = dynamic_cast<Books*>(product.get())) {
-            cout << "Book: " << book->getName() << ", Price: " << book->getPrice()
-                 << ", Quantity: " << book->getQuantityInStock()
-                 << ", Author: " << book->getAuthor()
-                 << ", Genre: " << book->getGenre()
-                 << ", ISBN: " << book->getISBN() << "\n";
-        } else if (auto clothing = dynamic_cast<Clothing*>(product.get())) {
-            cout << "Clothing: " << clothing->getName() << ", Price: " << clothing->getPrice()
-                 << ", Quantity: " << clothing->getQuantityInStock()
-                 << ", Size: " << clothing->getSize()
-                 << ", Color: " << clothing->getColor()
-                 << ", Material: " << clothing->getMaterial() << "\n";
+        // You can access common product properties here
+        cout << "Product ID: " << product->getProductID() << endl;
+        cout << "Name: " << product->getName() << endl;
+        cout << "Price: " << product->getPrice() << endl;
+
+        // Check the type of product and call specific methods
+        if (auto electronicProduct = dynamic_cast<Electronics*>(product.get())) {
+            electronicProduct->displayPowerConsumption();
+        } else if (auto bookProduct = dynamic_cast<Books*>(product.get())) {
+            bookProduct->displayAuthor();
+        } else if (auto clothingProduct = dynamic_cast<Clothing*>(product.get())) {
+            clothingProduct->displaySize();
         }
+
+        cout << "-------------------------" << endl;
     }
 
     return 0;
