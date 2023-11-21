@@ -103,33 +103,67 @@ public:
 
 class Order {
 private:
+    static int orderIDCounter;
     int orderID;
-    string customer;
-    vector<unique_ptr<Product>> products;
+    string customerName = "";
+    vector<unique_ptr<Product>> cart;
     double totalCost;
     string orderStatus;
 
 public:
-    Order(int id, const string& customer)
-            : orderID(id), customer(customer), totalCost(0.0), orderStatus("Pending") {}
+    Order()
+            : orderID(++orderIDCounter), totalCost(0.0), orderStatus("Pending") {}
 
-    void addProduct(unique_ptr<Product> product) {
-        products.push_back(move(product));
+    void registerCustomer(const string& name) {
+        customerName = name;
+        cout << "Customer " << name << " registered." << endl;
     }
 
-    void calculateTotalCost() {
-        totalCost = 0.0;
-        for (const auto& product : products) {
-            totalCost += product->calculateTotalCost(product->getQuantityInStock());
+    void addToCart(unique_ptr<Product> product) {
+        if (customerName == ""){
+            cout << "You are not registered, to add products you should register first" << endl;
+        } else{
+            cart.push_back(move(product));
+            cout << "Added " << product->getName() << " to the cart." << endl;
         }
     }
 
-    void changeOrderStatus(const string& newStatus) {
-        orderStatus = newStatus;
+    void displayCart() const {
+        cout << "Cart for " << customerName << ":" << endl;
+        for (const auto& product : cart) {
+            cout << "Product ID: " << product->getProductID() << ", Name: " << product->getName()
+                 << ", Quantity: " << product->getQuantityInStock() << ", Total Cost: "
+                 << product->calculateTotalCost(product->getQuantityInStock()) << endl;
+        }
+
+        showTotalCost();
+    }
+
+    void showTotalCost() const {
+        cout << "Total Cost of Cart: " << totalCost << endl;
+    }
+
+    bool confirmOrder() {
+        if (cart.empty()) {
+            cout << "Nothing in the cart. Cannot confirm the order." << endl;
+            return false;
+        }
+
+        cout << "Confirming order for " << customerName << endl;
+        changeOrderStatus("Confirmed");
+        cout << "Order confirmed. Order ID: " << orderID << endl;
+
+        return true;
     }
 
     ~Order() {}
+
+private:
+    void changeOrderStatus(const string& newStatus) {
+        orderStatus = newStatus;
+    }
 };
+
 
 class ProductCatalog {
 private:
@@ -327,8 +361,5 @@ int main() {
     ConfigReader configReader;
     vector<unique_ptr<Product>> products = configReader.loadProducts("C:\\KSE IT\\oop_2\\text");
     ProductCatalog productCatalog(move(products));
-
-    productCatalog.viewAllProducts();
-
     return 0;
 }
