@@ -166,8 +166,6 @@ private:
 
 
 class ProductCatalog {
-private:
-    vector<unique_ptr<Product>> products;
 
 public:
     ProductCatalog(vector<unique_ptr<Product>>&& existingProducts)
@@ -211,6 +209,8 @@ public:
                  << ", Price: " << product->getPrice() << ", Quantity: " << product->getQuantityInStock() << endl;
         }
     }
+
+    vector<unique_ptr<Product>> products;
 };
 
 class Inventory {
@@ -354,12 +354,77 @@ private:
 };
 
 
+class ShoppingManager {
+private:
+    ProductCatalog& productCatalog;
+    Order order;
+
+public:
+    ShoppingManager(ProductCatalog& catalog)
+            : productCatalog(catalog) {}
+
+    void displayAllProducts() const {
+        productCatalog.viewAllProducts();
+    }
+
+    void addToCart(int productID, int quantity) {
+        auto product = findProduct(productID);
+
+        if (product) {
+            if (quantity > 0 && quantity <= product->getQuantityInStock()) {
+                auto productCopy = createProductCopy(product, quantity);
+                order.addToCart(move(productCopy));
+                product->setQuantityInStock(product->getQuantityInStock() - 1);
+            } else {
+                cout << "Invalid quantity or insufficient stock for product ID " << productID << endl;
+            }
+        } else {
+            cout << "Product with ID " << productID << " not found." << endl;
+        }
+    }
+
+    void displayCart(){
+        order.displayCart();
+    }
 
 
+private:
+    unique_ptr<Product> findProduct(int productID) const {
+        auto it = find_if(productCatalog.products.begin(), productCatalog.products.end(), [productID](const auto& product) {
+            return product->getProductID() == productID;
+        });
+
+        return (it != productCatalog.products.end()) ? makeProductCopy(*it) : nullptr;
+    }
+
+    unique_ptr<Product> makeProductCopy(const unique_ptr<Product>& product) const {
+        return make_unique<Product>(product->getProductID(), product->getName(),
+                                    product->getPrice(), product->getQuantityInStock());
+    }
+
+    unique_ptr<Product> createProductCopy(const unique_ptr<Product>& product, int quantity) const {
+        return make_unique<Product>(product->getProductID(), product->getName(),
+                                    product->getPrice(), quantity);
+    }
+};
+
+
+
+int Order::orderIDCounter = 0;
 
 int main() {
     ConfigReader configReader;
     vector<unique_ptr<Product>> products = configReader.loadProducts("C:\\KSE IT\\oop_2\\text");
     ProductCatalog productCatalog(move(products));
+    ShoppingManager shoppingManager(productCatalog);
+
+    // Example usage
+    shoppingManager.displayAllProducts();
+
+    shoppingManager.addToCart(1, 3); // Add 3 units of product with ID 1 to the cart
+    shoppingManager.addToCart(2, 2); // Add 2 units of product with ID 2 to the cart
+
+    // Display the cart and low stock products
+    shoppingManager.displayCart();
     return 0;
 }
