@@ -5,229 +5,31 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
-#include <map>
+#include <limits>
+#include "Product.h"
+#include "Electronics.h"
+#include "Books.h"
+#include "Clothing.h"
+#include "ProductCatalog.h"
+#include "Order.h"
 
 using namespace std;
 
-class Product {
-protected:
-    int productID;
-    string name;
-    double price;
-    int quantityInStock;
-
-public:
-    Product(int id, const string& name, double price, int quantity)
-            : productID(id), name(name), price(price), quantityInStock(quantity) {}
-
-    int getProductID() const { return productID; }
-    string getName() const { return name; }
-    double getPrice() const { return price; }
-    int getQuantityInStock() const { return quantityInStock; }
-
-    void setProductID(int id) { productID = id; }
-    void setName(const string& newName) { name = newName; }
-    void setPrice(double newPrice) { price = newPrice; }
-    void setQuantityInStock(int quantity) { quantityInStock = quantity; }
-
-    // Method to calculate total cost
-    double calculateTotalCost(int quantity) const {
-        return price * quantity;
-    }
-    virtual ~Product() {}
-};
-
-class Electronics : public Product {
-private:
-    string brand;
-    string model;
-    string powerConsumption;
-
-public:
-    Electronics(int id, const string& name, double price, int quantity,
-                const string& brand, const string& model, string powerConsumption)
-            : Product(id, name, price, quantity),
-              brand(brand), model(model), powerConsumption(powerConsumption) {}
-
-    string getBrand() const { return brand; }
-    string getModel() const { return model; }
-    string getPowerConsumption() const { return powerConsumption; }
-
-    void displayPowerConsumption() const {
-        cout << "Power Consumption: " << powerConsumption << " Watts\n";
-    }
-    virtual ~Electronics(){}
-};
-
-class Books : public Product {
-private:
-    string author;
-    string genre;
-    string ISBN;
-
-public:
-    Books(int id, const string& name, double price, int quantity,
-          const string& author, const string& genre, const string& ISBN)
-            : Product(id, name, price, quantity), author(author), genre(genre), ISBN(ISBN) {}
-
-    string getAuthor() const { return author; }
-    string getGenre() const { return genre; }
-    string getISBN() const { return ISBN; }
-
-    void displayAuthor() const {
-        cout << "Author: " << author << "\n";
-    }
-    virtual ~Books(){}
-};
-
-class Clothing : public Product {
-private:
-    string size;
-    string color;
-    string material;
-
-public:
-    Clothing(int id, const string& name, double price, int quantity,
-             const string& size, const string& color, const string& material)
-            : Product(id, name, price, quantity), size(size), color(color), material(material) {}
-
-    string getSize() const { return size; }
-    string getColor() const { return color; }
-    string getMaterial() const { return material; }
-
-    void displaySize() const {
-        cout << "Size: " << size << "\n";
-    }
-    virtual ~Clothing(){}
-};
-
-class Order {
-private:
-    static int orderIDCounter;
-    int orderID;
-    string customerName = "";
-    vector<unique_ptr<Product>> cart;
-    double totalCost;
-    string orderStatus;
-
-public:
-    Order()
-            : orderID(++orderIDCounter), totalCost(0.0), orderStatus("Pending") {}
-
-    void registerCustomer(const string& name) {
-        customerName = name;
-        cout << "Customer " << name << " registered." << endl;
-    }
-
-    void addToCart(unique_ptr<Product> product) {
-        if (customerName == ""){
-            cout << "You are not registered, to add products you should register first" << endl;
-        } else{
-            cart.push_back(move(product));
-            cout << "Added " << product->getName() << " to the cart." << endl;
-        }
-    }
-
-    void displayCart() const {
-        cout << "Cart for " << customerName << ":" << endl;
-        for (const auto& product : cart) {
-            cout << "Product ID: " << product->getProductID() << ", Name: " << product->getName()
-                 << ", Quantity: " << product->getQuantityInStock() << ", Total Cost: "
-                 << product->calculateTotalCost(product->getQuantityInStock()) << endl;
-        }
-
-        showTotalCost();
-    }
-
-    void showTotalCost() const {
-        cout << "Total Cost of Cart: " << totalCost << endl;
-    }
-
-    bool confirmOrder() {
-        if (cart.empty()) {
-            cout << "Nothing in the cart. Cannot confirm the order." << endl;
-            return false;
-        }
-
-        cout << "Confirming order for " << customerName << endl;
-        changeOrderStatus("Confirmed");
-        cout << "Order confirmed. Order ID: " << orderID << endl;
-
-        return true;
-    }
-
-    ~Order() {}
-
-private:
-    void changeOrderStatus(const string& newStatus) {
-        orderStatus = newStatus;
-    }
-};
-
-
-class ProductCatalog {
-
-public:
-    ProductCatalog(vector<unique_ptr<Product>>&& existingProducts)
-            : products(move(existingProducts)) {}
-
-    void addProduct(unique_ptr<Product> product) {
-        products.push_back(move(product));
-    }
-
-    void updateProduct(int productID, const string& newName, double newPrice, int newQuantity) {
-        auto it = find_if(products.begin(), products.end(), [productID](const auto& product) {
-            return product->getProductID() == productID;
-        });
-
-        if (it != products.end()) {
-            (*it)->setName(newName);
-            (*it)->setPrice(newPrice);
-            (*it)->setQuantityInStock(newQuantity);
-        } else {
-            cout << "Product with ID " << productID << " not found." << endl;
-        }
-    }
-
-    void removeProduct(int productID) {
-        auto it = remove_if(products.begin(), products.end(), [productID](const auto& product) {
-            return product->getProductID() == productID;
-        });
-
-        if (it != products.end()) {
-            products.erase(it, products.end());
-            cout << "Product with ID " << productID << " removed successfully." << endl;
-        } else {
-            cout << "Product with ID " << productID << " not found." << endl;
-        }
-    }
-
-    void viewAllProducts() const {
-        cout << "Product Catalog:" << endl;
-        for (const auto& product : products) {
-            cout << "ID: " << product->getProductID() << ", Name: " << product->getName()
-                 << ", Price: " << product->getPrice() << ", Quantity: " << product->getQuantityInStock() << endl;
-        }
-    }
-
-    vector<unique_ptr<Product>> products;
-};
-
 class Inventory {
 private:
-    vector<unique_ptr<Product>> products;
+    ProductCatalog& productCatalog;
     int lowStockThreshold;
 
 public:
-    Inventory(int threshold, vector<unique_ptr<Product>>&& existingProducts)
-            : lowStockThreshold(threshold), products(move(existingProducts)) {}
+    Inventory(int threshold, ProductCatalog& catalog)
+            : lowStockThreshold(threshold), productCatalog(catalog) {}
 
     void manageStockLevels(int productID, int quantity) {
-        auto it = find_if(products.begin(), products.end(), [productID](const auto& product) {
+        auto it = find_if(productCatalog.products.begin(), productCatalog.products.end(), [productID](const auto& product) {
             return product->getProductID() == productID;
         });
 
-        if (it != products.end()) {
+        if (it != productCatalog.products.end()) {
             (*it)->setQuantityInStock((*it)->getQuantityInStock() + quantity);
 
             // Notify if the stock is low
@@ -241,7 +43,7 @@ public:
 
     void notifyLowStockProducts() const {
         cout << "Low stock products:" << endl;
-        for (const auto& product : products) {
+        for (const auto& product : productCatalog.products) {
             if (product->getQuantityInStock() < lowStockThreshold) {
                 cout << "ID: " << product->getProductID() << ", Name: " << product->getName()
                      << ", Current Stock: " << product->getQuantityInStock() << endl;
@@ -251,7 +53,7 @@ public:
 
     void restockProducts() {
         cout << "Products that need restocking:" << endl;
-        for (const auto& product : products) {
+        for (const auto& product : productCatalog.products) {
             if (product->getQuantityInStock() < lowStockThreshold) {
                 int quantityToRestock = lowStockThreshold - product->getQuantityInStock();
                 manageStockLevels(product->getProductID(), quantityToRestock);
@@ -354,13 +156,13 @@ private:
 };
 
 
-class ShoppingManager {
+class ShoppingSystem {
 private:
     ProductCatalog& productCatalog;
-    Order order;
+    Order cart;
 
 public:
-    ShoppingManager(ProductCatalog& catalog)
+    ShoppingSystem(ProductCatalog& catalog)
             : productCatalog(catalog) {}
 
     void displayAllProducts() const {
@@ -373,8 +175,8 @@ public:
         if (product) {
             if (quantity > 0 && quantity <= product->getQuantityInStock()) {
                 auto productCopy = createProductCopy(product, quantity);
-                order.addToCart(move(productCopy));
-                product->setQuantityInStock(product->getQuantityInStock() - 1);
+                cart.addToCart(move(productCopy));
+                product->setQuantityInStock(product->getQuantityInStock() - quantity);
             } else {
                 cout << "Invalid quantity or insufficient stock for product ID " << productID << endl;
             }
@@ -383,10 +185,41 @@ public:
         }
     }
 
-    void displayCart(){
-        order.displayCart();
+
+    void deleteFromCart(int productID, int quantity) {
+        auto it = std::find_if(cart.cart.begin(), cart.cart.end(), [productID](const auto& product) {
+            return product->getProductID() == productID;
+        });
+
+        if (it != cart.cart.end()) {
+            int remainingQuantity = (*it)->getQuantityInStock() - quantity;
+
+            if (remainingQuantity <= 0) {
+                // If the remaining quantity is zero or negative, remove the product from the cart
+                cart.cart.erase(it);
+                std::cout << "Product with ID " << productID << " removed from the cart." << std::endl;
+            } else {
+                // Update the quantity of the product in the cart
+                (*it)->setQuantityInStock(remainingQuantity);
+                std::cout << "Quantity of product with ID " << productID << " reduced to " << remainingQuantity << " in the cart." << std::endl;
+            }
+        } else {
+            std::cout << "Product with ID " << productID << " not found in the cart." << std::endl;
+        }
     }
 
+
+    void confirmOrder() {
+        cart.confirmOrder();
+    }
+
+    void displayCart() const {
+        cart.displayCart();
+    }
+
+    void registration(string customerName) {
+        cart.registerCustomer(customerName);
+    }
 
 private:
     unique_ptr<Product> findProduct(int productID) const {
@@ -408,23 +241,166 @@ private:
     }
 };
 
-
-
-int Order::orderIDCounter = 0;
-
 int main() {
     ConfigReader configReader;
-    vector<unique_ptr<Product>> products = configReader.loadProducts("C:\\KSE IT\\oop_2\\text");
-    ProductCatalog productCatalog(move(products));
-    ShoppingManager shoppingManager(productCatalog);
+    std::vector<std::unique_ptr<Product>> products = configReader.loadProducts("C:\\KSE IT\\oop_2\\text");
+    ProductCatalog productCatalog(std::move(products));
+    Inventory inventory(15, productCatalog);
+    ShoppingSystem shoppingSystem(productCatalog);
 
-    // Example usage
-    shoppingManager.displayAllProducts();
+    std::string userType;
+    std::cout << "Welcome to the Shopping System!\n";
 
-    shoppingManager.addToCart(1, 3); // Add 3 units of product with ID 1 to the cart
-    shoppingManager.addToCart(2, 2); // Add 2 units of product with ID 2 to the cart
+    // Choose user type (admin or user)
+    std::cout << "Enter user type ('admin' or 'user'): ";
+    std::getline(std::cin, userType);
 
-    // Display the cart and low stock products
-    shoppingManager.displayCart();
+    if (userType == "admin") {
+        // Admin scenario
+        std::string adminCommand;
+        while (true) {
+            std::cout << "\nEnter an admin command (type 'help' for a list of commands): ";
+            std::getline(std::cin, adminCommand);
+
+            if (adminCommand == "exit") {
+                break;
+            } else if (adminCommand == "help") {
+                std::cout << "Admin commands:\n"
+                             "- display: Display all products\n"
+                             "- add: Add a product to the catalog\n"
+                             "- update: Update product information\n"
+                             "- remove: Remove a product from the catalog\n"
+                             "- inventory: Manage inventory\n"
+                             "- restock: Restock products\n"
+                             "- exit: Exit the program\n";
+            } else if (adminCommand == "display") {
+                productCatalog.viewAllProducts();
+            } else if (adminCommand == "add") {
+                // Admin can add a new product to the catalog
+                int category;
+                std::cout << "Enter product category (1 for Electronics, 2 for Books, 3 for Clothing): ";
+                std::cin >> category;
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clear the input buffer
+
+                std::cout << "Enter product details separated by commas (ID, Name, Price, Quantity, Var1, Var2, Var3): ";
+                string productDetails;
+                getline(cin, productDetails);
+                stringstream ss(productDetails);
+                vector<string> tokens;
+                string token;
+                while (getline(ss, token, ',')) {
+                    tokens.push_back(token);
+                }
+
+                unique_ptr<Product> newProduct;
+                if (category == 1) {
+                    // Assuming the tokens are correctly formatted for Electronics
+                    int id = stoi(tokens[0]);
+                    double price = stod(tokens[2]);
+                    int quantity = stoi(tokens[3]);
+                    newProduct = make_unique<Electronics>(id, tokens[1], price, quantity, tokens[4], tokens[5], tokens[6]);
+                } else if (category == 2) {
+                    // Assuming the tokens are correctly formatted for Books
+                    int id = stoi(tokens[0]);
+                    double price = stod(tokens[2]);
+                    int quantity = stoi(tokens[3]);
+                    newProduct = make_unique<Books>(id, tokens[1], price, quantity, tokens[4], tokens[5], tokens[6]);
+                } else if (category == 3) {
+                    // Assuming the tokens are correctly formatted for Clothing
+                    int id = stoi(tokens[0]);
+                    double price = stod(tokens[2]);
+                    int quantity = stoi(tokens[3]);
+                    newProduct = make_unique<Clothing>(id, tokens[1], price, quantity, tokens[4], tokens[5], tokens[6]);
+                } else {
+                    std::cout << "Invalid category.\n";
+                    continue;
+                }
+
+                productCatalog.addProduct(std::move(newProduct));
+            }
+            else if (adminCommand == "update") {
+                int productID, quantity;
+                std::string newName;
+                double newPrice;
+
+                std::cout << "Enter product ID, new name, new price, and new quantity: ";
+                std::cin >> productID >> newName >> newPrice >> quantity;
+                std::cin.ignore();
+
+                productCatalog.updateProduct(productID, newName, newPrice, quantity);
+            } else if (adminCommand == "remove") {
+                int productID;
+                std::cout << "Enter product ID to remove: ";
+                std::cin >> productID;
+                std::cin.ignore();
+
+                productCatalog.removeProduct(productID);
+            } else if (adminCommand == "inventory") {
+                int productID, quantity;
+                std::cout << "Enter product ID and quantity to manage stock levels: ";
+                std::cin >> productID >> quantity;
+                std::cin.ignore();
+
+                inventory.manageStockLevels(productID, quantity);
+            }
+            else if (adminCommand == "restock"){
+                inventory.restockProducts();
+            }else {
+                    std::cout << "Invalid command. Type 'help' for a list of commands.\n";
+                }
+            }
+
+    } else if (userType == "user") {
+        // User scenario
+        std::string userCommand;
+        std::string username;
+        std::cout << "Enter your username for registration: ";
+        std::getline(std::cin, username);
+        shoppingSystem.registration(username);
+
+        while (true) {
+            std::cout << "\nEnter a user command (type 'help' for a list of commands): ";
+            std::getline(std::cin, userCommand);
+
+            if (userCommand == "exit") {
+                break;
+            } else if (userCommand == "help") {
+                std::cout << "User commands:\n"
+                             "- display: Display all products\n"
+                             "- add: Add a product to the cart\n"
+                             "- delete: Delete a product from the cart\n"
+                             "- cart: Display the cart\n"
+                             "- confirm: Confirm the order\n"
+                             "- exit: Exit the program\n";
+            } else if (userCommand == "display") {
+                shoppingSystem.displayAllProducts();
+            } else if (userCommand == "add") {
+                int productID, quantity;
+                std::cout << "Enter product ID and quantity to add to the cart: ";
+                std::cin >> productID >> quantity;
+                std::cin.ignore();
+                shoppingSystem.addToCart(productID, quantity);
+            } else if (userCommand == "delete") {
+                int productID, quantity;
+                std::cout << "Enter product ID and quantity to delete from the cart: ";
+                std::cin >> productID >> quantity;
+                std::cin.ignore();
+                shoppingSystem.deleteFromCart(productID, quantity);
+            } else if (userCommand == "cart") {
+                shoppingSystem.displayCart();
+            } else if (userCommand == "confirm") {
+                shoppingSystem.confirmOrder();
+            } else {
+                std::cout << "Invalid command. Type 'help' for a list of commands.\n";
+            }
+        }
+    } else {
+        std::cout << "Invalid user type. Exiting the program.\n";
+    }
+
+    std::cout << "Exiting the Shopping System. Goodbye!\n";
+
     return 0;
 }
+
+
