@@ -1,4 +1,7 @@
 #include "ProductCatalog.h"
+#include "Electronics.h"
+#include "Clothing.h"
+#include "Books.h"
 #include <algorithm>
 #include <iostream>
 
@@ -39,7 +42,19 @@ void ProductCatalog::removeProduct(int productID) {
 void ProductCatalog::viewAllProducts() const {
     std::cout << "Product Catalog:" << std::endl;
     for (const auto& product : products) {
-        std::cout << "ID: " << product->getProductID() << ", Name: " << product->getName()
-                  << ", Price: " << product->getPrice() << ", Quantity: " << product->getQuantityInStock() << std::endl;
+        if (auto elec = dynamic_cast<Electronics*>(product.get())) {
+            elec->displayDetails();
+        }
+        else if (auto cloth = dynamic_cast<Clothing*>(product.get())) {
+            cloth->displayDetails();
+        }
+        else if (auto book = dynamic_cast<Books*>(product.get())) {
+            book->displayDetails();
+        }
+        else {
+            product->displayDetails();
+        }
+        std::cout << std::endl;
     }
 }
+
