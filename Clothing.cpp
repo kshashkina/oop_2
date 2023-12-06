@@ -21,5 +21,11 @@ std::string Clothing::getMaterial() const {
 void Clothing::displaySize() const {
     std::cout << "Size: " << size << "\n";
 }
+void Clothing::displayDetails() const {
+    Product::display();
+    std::cout << "Size: " << size << std::endl;
+    std::cout << "Color: " << color << std::endl;
+    std::cout << "Material: " << material << std::endl;
+}
 
 Clothing::~Clothing() {}

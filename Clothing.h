@@ -20,6 +20,7 @@ public:
     std::string getMaterial() const;
 
     void displaySize() const;
+    void displayDetails() const override;
 
     ~Clothing();
 };

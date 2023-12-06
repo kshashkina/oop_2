@@ -20,6 +20,7 @@ public:
     std::string getPowerConsumption() const;
 
     void displayPowerConsumption() const;
+    void displayDetails() const override;
 
     ~Electronics();
 };

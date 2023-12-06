@@ -23,4 +23,11 @@ void Electronics::displayPowerConsumption() const {
     std::cout << "Power Consumption: " << powerConsumption << " Watts\n";
 }
 
+void Electronics::displayDetails() const {
+    Product::display();
+    std::cout << "Brand: " << brand << std::endl;
+    std::cout << "Model: " << model << std::endl;
+    std::cout << "Power Consumption: " << powerConsumption << " Watts" << std::endl;
+}
+
 Electronics::~Electronics() {}

@@ -22,4 +22,12 @@ void Books::displayAuthor() const {
     std::cout << "Author: " << author << "\n";
 }
 
+void Books::displayDetails() const {
+    Product::display();
+    std::cout << "Author: " << author << std::endl;
+    std::cout << "Genre: " << genre << std::endl;
+    std::cout << "ISBN: " << ISBN << std::endl;
+}
+
+
 Books::~Books() {}

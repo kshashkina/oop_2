@@ -20,6 +20,7 @@ public:
     std::string getISBN() const;
 
     void displayAuthor() const;
+    void displayDetails() const override;
 
     ~Books();
 };

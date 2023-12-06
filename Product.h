@@ -26,6 +26,9 @@ public:
 
     double calculateTotalCost(int quantity) const;
     void decreaseStock(int quantity);
+    virtual void displayDetails() const = 0;
+    void display() const;
+
 
     ~Product();
 };

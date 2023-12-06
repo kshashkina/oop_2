@@ -1,4 +1,6 @@
 #include "Product.h"
+#include "iostream"
+
 
 Product::Product(int id, const std::string& name, double price, int quantity)
         : productID(id), name(name), price(price), quantityInStock(quantity) {}
@@ -42,5 +44,13 @@ double Product::calculateTotalCost(int quantity) const {
 void Product::decreaseStock(int quantity) {
     quantityInStock -= quantity;
 }
+
+void Product::display() const {
+    std::cout << "Product ID: " << productID << std::endl;
+    std::cout << "Name: " << name << std::endl;
+    std::cout << "Price: $" << price << std::endl;
+    std::cout << "Quantity in Stock: " << quantityInStock << std::endl;
+}
+
 
 Product::~Product() {}
