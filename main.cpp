@@ -231,14 +231,41 @@ private:
     }
 
     unique_ptr<Product> makeProductCopy(const unique_ptr<Product>& product) const {
-        return make_unique<Product>(product->getProductID(), product->getName(),
-                                    product->getPrice(), product->getQuantityInStock());
+        if (auto elec = dynamic_cast<const Electronics*>(product.get())) {
+            return make_unique<Electronics>(*elec);
+        }
+        else if (auto cloth = dynamic_cast<const Clothing*>(product.get())) {
+            return make_unique<Clothing>(*cloth);
+        }
+        else if (auto book = dynamic_cast<const Books*>(product.get())) {
+            return make_unique<Books>(*book);
+        }
+        else {
+            throw std::runtime_error("Unknown product type for copy");
+        }
     }
 
     unique_ptr<Product> createProductCopy(const unique_ptr<Product>& product, int quantity) const {
-        return make_unique<Product>(product->getProductID(), product->getName(),
-                                    product->getPrice(), quantity);
+        if (auto elec = dynamic_cast<const Electronics*>(product.get())) {
+            return make_unique<Electronics>(elec->getProductID(), elec->getName(),
+                                            elec->getPrice(), quantity,
+                                            elec->getBrand(), elec->getModel(), elec->getPowerConsumption());
+        }
+        else if (auto cloth = dynamic_cast<const Clothing*>(product.get())) {
+            return make_unique<Clothing>(cloth->getProductID(), cloth->getName(),
+                                         cloth->getPrice(), quantity,
+                                         cloth->getSize(), cloth->getColor(), cloth->getMaterial());
+        }
+        else if (auto book = dynamic_cast<const Books*>(product.get())) {
+            return make_unique<Books>(book->getProductID(), book->getName(),
+                                      book->getPrice(), quantity,
+                                      book->getAuthor(), book->getGenre(), book->getISBN());
+        }
+        else {
+            throw std::runtime_error("Unknown product type for copy with new quantity");
+        }
     }
+
 };
 
 int main() {
@@ -289,7 +316,7 @@ int main() {
                 vector<string> tokens;
                 string token;
                 while (getline(ss, token, ',')) {
-                    tokens.push_back(token);
+                    tokens.push_back(move(token));
                 }
 
                 unique_ptr<Product> newProduct;
